@@ -1,0 +1,39 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+*.tsbuildinfo
+
+# Build output
+dist/
+build/
+out/
+coverage/
+
+# Rust / Tauri
+target/
+desktop/src-tauri/target/
+desktop/src-tauri/gen/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+.AppleDouble
+.Spotlight-V100
+.Trashes
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Claude Code local settings
+.claude/settings.local.json
