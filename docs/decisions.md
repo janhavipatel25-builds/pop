@@ -14,3 +14,6 @@ Date · decision · why
 | 2026-11-03 | You can work around the bubble; clicking its surface pops it | Doesn't block work, still demands a pop. |
 | 2026-11-03 | Mac sleeps mid-timer: on wake, ask to reset; otherwise resume | Respects what the person wants. |
 | 2026-11-03 | Agent team led by MJ, with a learnings loop and phase retros | Better help over time; Jahnavi stays in charge. |
+| 2026-11-04 | Bubble appears on the screen you're using | That's where your eyes are. |
+| 2026-11-04 | Bubble forms in the centre of the screen | Hard to ignore; the pop is the product. |
+| 2026-11-04 | Look direction: soft and glassy | Fits "calm until it matters". |
