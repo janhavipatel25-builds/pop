@@ -13,8 +13,12 @@ Filled in during Phase 1. Source of truth for the feel will be `pop-prototype.ht
 - Grow: **5 seconds**.
 - Everything else: TBD (pop animation, prompt reveal).
 
-## Open design questions
-- **Look:** colours, fonts, bubble style (Figma).
-- **Position:** where on the screen the bubble forms.
-- **Prompt list:** the final rest prompts.
-- **Monitors:** which screen gets the bubble (Jahnavi to decide).
+## Decided (2026-11-04)
+- **Monitor:** the screen you're using (where your mouse / active window is).
+- **Position:** centre of that screen.
+- **Look direction:** soft and glassy (translucent, iridescent soap-bubble; light and calm). Exact colours and fonts are still to design in Figma.
+
+## Still open
+- **Look details:** colours, fonts, bubble style (Figma).
+- **Prompt list:** the final rest prompts (task 2).
+- **Pop animation and prompt reveal timings:** tune in the prototype.
