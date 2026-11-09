@@ -20,5 +20,35 @@ Filled in during Phase 1. Source of truth for the feel will be `pop-prototype.ht
 
 ## Still open
 - **Look details:** colours, fonts, bubble style (Figma).
-- **Prompt list:** the final rest prompts (task 2).
 - **Pop animation and prompt reveal timings:** tune in the prototype.
+
+## Rest prompts (v1 draft, approved 2026-11-08)
+Rules: 8 words or fewer, kind and playful (never bossy), doable in under 5 minutes. Shown in a different order each time.
+
+**Eyes**
+1. Find 5 things that are 20 feet away.
+2. Look out a window for a minute.
+3. Soften your eyes and look far away.
+4. Blink slowly ten times.
+
+**Body**
+5. Take a small walk.
+6. Stretch like a cat.
+7. Roll your shoulders back, slowly.
+8. Stand up and shake out your hands.
+9. Reach for the ceiling, then the floor.
+
+**Water and fuel**
+10. Time to hydrate.
+11. Refill your water, then sip it.
+12. Grab a snack that makes you happy.
+
+**Breathing and calm**
+13. Take three slow breaths.
+14. Unclench your jaw and drop your shoulders.
+15. Close your eyes for ten seconds.
+
+**A little delight**
+16. Say hi to someone, or something, nearby.
+17. Step outside for a breath of fresh air.
+18. Look at something green.
