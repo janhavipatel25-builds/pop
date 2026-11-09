@@ -17,3 +17,4 @@ Date · decision · why
 | 2026-11-04 | Bubble appears on the screen you're using | That's where your eyes are. |
 | 2026-11-04 | Bubble forms in the centre of the screen | Hard to ignore; the pop is the product. |
 | 2026-11-04 | Look direction: soft and glassy | Fits "calm until it matters". |
+| 2026-11-08 | 18 rest prompts approved as the v1 draft (in design-spec.md) | Short, kind, doable; can be tweaked after real use. |

@@ -7,14 +7,14 @@ Living status log. Read at the start of every session; update at the end.
 - **Repo:** https://github.com/janhavipatel25-builds/pop (public). Branches `main` and `develop` pushed. Currently on `develop`.
 
 ## Phases
-- [ ] 1. Design the feel (in progress: task 1 done; next: task 2, prompt list) (Figma + `pop-prototype.html`)
+- [ ] 1. Design the feel (in progress: tasks 1-2 done; next: task 3, Figma states) (Figma + `pop-prototype.html`)
 - [ ] 2. Web demo
 - [ ] 3. Mac app (Tauri)
 - [ ] 4. Polish + accessibility
 - [ ] 5. Ship (`v1.0.0`)
 
 ## Open questions
-- Look details (colours, fonts), rest-prompt list (Phase 1)
+- Look details (colours, fonts) (Phase 1)
 - Confirm frontend: React + Vite + Tailwind
 
 ## Session log
@@ -26,3 +26,4 @@ Living status log. Read at the start of every session; update at the end.
 
 ### 2026-11-04 · Session 1 (MJ), continued
 - Phase 1 approved. Task 1 done: monitor = screen in use, position = centre, look = soft and glassy. Recorded in `design-spec.md` and `decisions.md`.
+- 2026-11-08: Task 2 done. 18 rest prompts approved (v1 draft) and saved in `design-spec.md`.
