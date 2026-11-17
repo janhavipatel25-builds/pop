@@ -18,3 +18,11 @@ Date · decision · why
 | 2026-11-04 | Bubble forms in the centre of the screen | Hard to ignore; the pop is the product. |
 | 2026-11-04 | Look direction: soft and glassy | Fits "calm until it matters". |
 | 2026-11-08 | 18 rest prompts approved as the v1 draft (in design-spec.md) | Short, kind, doable; can be tweaked after real use. |
+| 2026-11-11 | Replace the single big bubble with a **pour**: at 0, small and medium bubbles pour in from the bottom-left corner and fill about 70% of the screen, then stop | More playful, suits the realistic small/medium bubbles, and leaves gaps to click through. **Supersedes** "the bubble grows over 5s and stays until popped" (2026-11-03). |
+| 2026-11-11 | The rest prompt appears after you pop a few bubbles (about 8 to 10, tune in prototype); remaining bubbles float away on **Start again** | Satisfying without hundreds of clicks. **Supersedes** "stays until popped" (2026-11-03). |
+| 2026-11-17 | Concept direction: **Pomodoro Garden** (name may change from Pop later). A garden element enters at the end of each work session; the **butterfly** is the first element. Bubble exploration is parked | A richer, calmer idea that can grow (more elements, nature sounds). **Supersedes** the bubble pour (2026-11-11) as the V1 reminder. |
+| 2026-11-17 | V1 reminder = the dot-built butterfly (`explorations/butterfly/`), design kept as-is for now | Motion and shape are good enough to build on; refine after V1 |
+| 2026-11-17 | Work times stay 20, 40 or 60 min | Unchanged |
+| 2026-11-17 | If ignored, the butterfly goes away by itself after 10 minutes | Gentle: a reminder, not a nag |
+| 2026-11-17 | Pressing the button makes the butterfly fly away; no auto-restart, the person taps to start again | Calm exit; she stays in control |
+| 2026-11-17 | Rest prompts, nature sounds and more garden elements are out of V1 | Keep V1 small |
