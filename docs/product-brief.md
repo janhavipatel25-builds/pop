@@ -2,13 +2,13 @@
 
 > A break timer that makes pausing a little joyful.
 
-**Owner:** Jahnavi Patel · **Status:** Phase 0 (scoping) · **Last updated:** Nov 3, 2026
+**Owner:** Jahnavi Patel · **Status:** Phase 0 (scoping) · **Last updated:** Nov 11, 2026
 
 ---
 
 ## 1. The idea in one line
 
-Pop is a Mac menu-bar timer. After your chosen work time (20, 40 or 60 minutes), a bubble forms on your screen. You pop it, and it gives you a small prompt to rest.
+Pop is a Mac menu-bar timer. After your chosen work time (20, 40 or 60 minutes), small and medium bubbles pour in from the bottom-left corner of your screen and fill most of it. You pop a few, and you get a small prompt to rest.
 
 ## 2. Why it exists
 
@@ -34,21 +34,21 @@ Pop is a Mac menu-bar timer. After your chosen work time (20, 40 or 60 minutes),
 
 1. **Start:** click the Pop icon in the Mac menu bar → pick **20, 40 or 60 min** → start.
 2. **Work:** the menu bar shows the minutes left (e.g. `18m`).
-3. **Bubble forms:** at 0, a bubble appears on the screen, over any app, and grows for **5 seconds**. (Where it appears is a design decision; see Open questions.)
-4. **Pop:** tap the bubble to pop it. **It stays until popped.**
-5. **Rest prompt:** the pop reveals **one rest prompt**, different each time. Examples:
+3. **The pour:** at 0, small and medium bubbles pour in from the **bottom-left corner**, over any app. The pour stops at about **70%** of the screen, so there are gaps.
+4. **Pop:** tap bubbles to pop them. Pop **about 8 to 10** (to be tuned in the prototype).
+5. **Rest prompt:** then **one rest prompt** appears, different each time. Examples:
    - "Find 5 things that are 20 feet away."
    - "Take a small walk."
    - "Time to hydrate."
-6. **Start again:** tap **Start again** when you're ready. No auto-restart.
+6. **Start again:** tap **Start again** when you're ready. The leftover bubbles float away. No auto-restart.
 
 ## 6. Scope
 
 **In V1**
 - Mac menu-bar app
 - Choice of work time: 20, 40 or 60 min
-- A bubble that forms over 5s and stays until popped
-- Pop animation + a rotating rest prompt (prompt list to be written)
+- A pour of small and medium bubbles from the bottom-left that fills about 70% of the screen
+- Pop animation + a rotating rest prompt after about 8 to 10 pops (prompt list written in `design-spec.md`)
 - Tap to start again
 - Web demo page (try the bubble in a browser)
 - Accessibility basics: keyboard pop (Space / Enter / Esc), respects reduced motion
@@ -76,15 +76,16 @@ Pop is a Mac menu-bar timer. After your chosen work time (20, 40 or 60 minutes),
 ## 9. Decided
 
 - **Screen sharing:** accepted for V1. If a call is being shared, others may see the bubble.
-- **Clicks around the bubble:** you can keep working everywhere *around* the bubble. You can't click through it: clicking its surface pops it.
+- **Clicks around the bubbles:** you can keep working in the gaps *between* bubbles. You can't click through a bubble: clicking its surface pops it.
 - **Mac sleeps mid-timer:** on wake, Pop asks if you want to reset. If you don't, it resumes.
 
 ## 10. Open questions
 
-**Jahnavi to decide**
-1. **Multiple monitors:** which screen does the bubble appear on?
+**Decided 2026-11-04 to 11-11** (see `decisions.md`)
+- **Multiple monitors:** the screen you're using.
+- **Where bubbles start:** the bottom-left corner.
+- **Rest prompts:** v1 list of 18 is in `design-spec.md`.
 
 **Design phase (Phase 1)**
-2. **Rest prompts:** the final list.
-3. **Look:** colours, fonts, bubble style (Figma).
-4. **Bubble position:** where on the screen the bubble forms.
+1. **Look:** colours, fonts, bubble style (Figma).
+2. **Pour:** speed, bubble sizes and counts, how many pops reveal the prompt (prototype).

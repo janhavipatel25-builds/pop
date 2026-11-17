@@ -1,17 +1,24 @@
 # Design spec (stub)
 
-Filled in during Phase 1. Source of truth for the feel will be `pop-prototype.html` once it exists.
+Filled in during Phase 1. Source of truth for the bubble feel is `explorations/bubble/pop-prototype.html`. A butterfly exploration lives in `explorations/butterfly/`; no choice made yet.
 
-## Bubble states
+## Bubble states (updated 2026-11-11: the pour)
+> Replaces the earlier single-big-bubble idea. Big-bubble Figma frames are kept for reference only.
+
 1. **Idle**: no bubble. Menu bar shows minutes left (e.g. `18m`).
-2. **Forming**: timer hits 0. Bubble appears over any app and grows.
-3. **Full**: bubble reaches full size after the 5s grow. Stays until popped.
-4. **Pop**: tap/click the bubble (or Space / Enter / Esc) → pop animation.
-5. **Rest prompt**: one prompt, different each time, with a **Start again** button.
+2. **Pour**: timer hits 0. Small and medium bubbles pour in from the **bottom-left corner**, over any app.
+3. **Filled**: the pour stops at about **70%** of the screen. Gaps stay clickable.
+4. **Pop**: tap/click a bubble (or Space / Enter / Esc) → pop animation. Pop about 8 to 10.
+5. **Rest prompt**: one prompt, different each time, with a **Start again** button. Remaining bubbles float away on Start again.
 
 ## Timings known so far
-- Grow: **5 seconds**.
+- Pour duration, bubble sizes and counts: TBD in the prototype (old 5s grow no longer applies).
 - Everything else: TBD (pop animation, prompt reveal).
+
+## Figma
+Bubble states (menu bar, forming, full, pop, rest prompt): https://www.figma.com/design/1rfXQob7GLFszrt3aOKpDI
+
+**Draft 3 (2026-11-11), current:** (backgrounds are realistic work scenes: a design tool for the main flow, plus a dark code editor and a document to test the bubble over other apps) draft 1's soft, glassy big bubble and pop, plus the realistic thin-film look for the small bubbles on the rest-prompt slide. Jahnavi felt the realistic big bubble (draft 2) didn't look right. Draft 2 is kept on a separate Figma page, "Draft 2 - realistic (archived)". Photos in `explorations/bubble/inspiration/` guided the small bubbles (clear centre, colour bands at the rim, sharp highlights).
 
 ## Decided (2026-11-04)
 - **Monitor:** the screen you're using (where your mouse / active window is).

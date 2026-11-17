@@ -12,7 +12,8 @@
 - [Decisions](docs/decisions.md) · [Test plan](docs/test-plan.md) · [Progress](progress.md)
 - [Team](docs/team/README.md) · [Retros](docs/team/retros.md) · [Learnings](docs/team/learnings/)
 - `docs/plan.md`: created by the Planner in Phase 1.
-- `pop-prototype.html` (once it exists) is the **feel source of truth**.
+- `explorations/bubble/pop-prototype.html` is the **feel source of truth for the bubble** idea.
+- `explorations/butterfly/` is a separate exploration (glyph butterfly instead of bubbles). Jahnavi has not chosen between them yet; don't treat either as final.
 
 ## Session routine
 - **At the start of every session, read `progress.md`. At the end, update it.**
