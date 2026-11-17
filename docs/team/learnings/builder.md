@@ -12,3 +12,4 @@ Read before every task. Append after every task.
 - 2026-11-17 · Web demo task 6 · Still no browser: syntax check only. Shared finish function (`finishLeave`) keeps the callback list and the instant stop in one place.
 - 2026-11-17 · Web demo tasks 2-4 (start screen, countdown, time's up) · A second `<script>` block that only uses `window.pop` kept the butterfly code untouched; timer uses `endAt` timestamps so background tabs do not drift.
 - 2026-11-17 · Web demo tasks 2-4 · White text on the red-orange ink is only about 4.3:1, so it is used only for large bold text; no browser again, so syntax check only.
+- 2026-11-17 · Web demo tasks 5-7 (Close button, fly away, 10-min auto-leave) · One function (`closeButterfly`) with a `butterflyOut` guard serves button, keys and timeout, so double presses are harmless; the auto-leave compares `Date.now()` in a 500 ms interval so background tabs do not matter. No browser again: syntax check only.
