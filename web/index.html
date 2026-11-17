@@ -5,18 +5,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pop</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #f1e4dc; }
-  /* The canvas floats over the page and never blocks clicks */
-  canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; pointer-events: none; }
-  /* TEMPORARY test bar (see below) */
+  /* Design tokens: change the look here */
+  :root {
+    --paper: #f1e4dc;
+    --ink: #d9482b;        /* red-orange: buttons, borders (3.4:1 on paper, so large/bold text only) */
+    --ink-fill: #c43d20;   /* a touch deeper, for filled buttons: white text on it is 5.2:1 */
+    --text: #7a3a28;       /* brown: body text (about 6.8:1 on paper) */
+    --on-ink: #fff;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --space: 24px;
+  }
+  html, body { margin: 0; height: 100%; overflow-x: hidden; background: var(--paper); color: var(--text); font-family: var(--font); }
+  /* The canvas floats over the page (above the UI) and never blocks clicks */
+  canvas { position: fixed; inset: 0; z-index: 5; display: block; width: 100vw; height: 100vh; pointer-events: none; }
+  main { min-height: 100%; box-sizing: border-box; padding: var(--space); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space); text-align: center; }
+  main > section { display: flex; flex-direction: column; align-items: center; gap: var(--space); max-width: 100%; }
+  [hidden] { display: none !important; }
+  h1 { margin: 0; font-size: 3rem; line-height: 1.1; }
+  p { margin: 0; font-size: 1.125rem; }
+  .choices { display: flex; gap: 8px; }
+  button { font: inherit; min-height: 44px; padding: 8px 20px; border: 2px solid var(--ink); border-radius: 999px; background: transparent; color: var(--text); cursor: pointer;
+           transition: transform 120ms ease-out, background-color 120ms ease-out; }
+  button:active { transform: scale(0.97); }
+  button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .choices button[aria-pressed="true"] { background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); font-weight: 700; }
+  .choices button[aria-pressed="true"]::before { content: "\2713\00a0"; }   /* a tick, so the selected state is not colour-only */
+  .big { min-height: 56px; padding: 12px 56px; font-size: 1.5rem; font-weight: 700; background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  #count { font-family: var(--mono); font-size: clamp(4rem, 22vw, 8rem); font-weight: 700; line-height: 1; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } button:active { transform: none; } }
+  /* TEMPORARY test bar (only shown with ?debug) */
   #test-bar { position: fixed; left: 12px; top: 12px; z-index: 10; display: flex; gap: 8px; }
 </style>
 </head>
 <body>
-<!-- TEMPORARY: test buttons, to be replaced by the real start screen in task 2 -->
-<div id="test-bar">
-  <button onclick="startButterfly()">Start butterfly</button>
-  <button onclick="stopButterfly()">Stop butterfly</button>
+<main>
+  <!-- Start screen -->
+  <section id="screen-start">
+    <h1 class="app-name">Pop</h1>   <!-- the app name lives here (and in <title>) -->
+    <p>A little garden for your breaks.</p>
+    <div class="choices" role="group" aria-label="Minutes until your break">
+      <button type="button" data-min="20" aria-pressed="true">20 min</button>
+      <button type="button" data-min="40" aria-pressed="false">40 min</button>
+      <button type="button" data-min="60" aria-pressed="false">60 min</button>
+    </div>
+    <button type="button" class="big" id="btn-start">Start</button>
+  </section>
+  <!-- Working screen -->
+  <section id="screen-work" hidden>
+    <div id="count" role="timer" aria-live="off">20m</div>
+    <div class="row">
+      <button type="button" id="btn-pause">Pause</button>
+      <button type="button" id="btn-reset">Reset</button>
+    </div>
+  </section>
+  <!-- Time's up: nothing on screen but the butterfly. Screen readers still hear "Time for a break." from the hidden #announce line below.
+       The real "Close for now" button comes in a later task. -->
+  <section id="screen-up" hidden></section>
+  <div id="announce" class="sr-only" aria-live="polite"></div>
+</main>
+<!-- TEMPORARY: butterfly test buttons, only shown with ?debug -->
+<div id="test-bar" hidden>
+  <button onclick="pop.startButterfly()">Start butterfly</button>
+  <button onclick="pop.stopButterfly()">Stop butterfly</button>
 </div>
 <canvas id="c" aria-label="A butterfly made of red-orange dots flies around the screen" role="img"></canvas>
 <script>
@@ -379,6 +432,71 @@ function stopButterflyNow() {                            // instant stop, no ani
   cbs.forEach(f => f());
 }
 window.pop = { startButterfly, stopButterfly, stopButterflyNow, leaveButterfly, getState: () => (running ? state : 'idle') };
+</script>
+<script>
+/* ======================================================================
+   5. THE TIMER AND SCREENS. Uses only window.pop (the butterfly API above).
+   ====================================================================== */
+if (new URLSearchParams(location.search).has('debug')) document.getElementById('test-bar').hidden = false;
+const FAST = new URLSearchParams(location.search).has('fast');   // ?fast=1: each "minute" lasts 1 second, for quick testing
+const MINUTE = FAST ? 1000 : 60000;
+const $ = id => document.getElementById(id);
+const screens = { start: $('screen-start'), work: $('screen-work'), up: $('screen-up') };
+const APP_NAME = document.querySelector('.app-name').textContent;
+let chosenMin = 20, endAt = 0, remaining = 0, paused = false, tickId = 0, lastSaid = '';
+
+function show(name) { for (const k in screens) screens[k].hidden = k !== name; }
+function label(ms) {                                     // "18m" while a minute or more is left (rounded up), then "42s"
+  const secs = Math.ceil(ms / MINUTE * 60);               // scaled so ?fast=1 reads like normal
+  return secs >= 60 ? Math.ceil(secs / 60) + 'm' : secs + 's';
+}
+function render() {
+  const ms = paused ? remaining : Math.max(0, endAt - Date.now());
+  const text = label(ms);
+  $('count').textContent = text;
+  document.title = text + ' \u00b7 ' + APP_NAME;
+  if (/m$/.test(text) && text !== lastSaid) { lastSaid = text; $('announce').textContent = text + ' left'; }   // screen readers: once per minute
+  return ms;
+}
+function tick() { if (!paused && render() <= 0) onTimeUp(); }
+
+function startTimer(ms) {                                // begin counting down from ms
+  clearInterval(tickId);
+  paused = false; endAt = Date.now() + ms; remaining = ms; lastSaid = '';
+  $('btn-pause').textContent = 'Pause';
+  show('work'); render();
+  tickId = setInterval(tick, 250);
+}
+function pauseTimer() {                                  // remember how much is left
+  if (paused) return;
+  remaining = Math.max(0, endAt - Date.now()); paused = true;
+  $('btn-pause').textContent = 'Resume';
+}
+function resumeTimer() {                                 // set a fresh end time from what was left
+  if (!paused) return;
+  endAt = Date.now() + remaining; paused = false;
+  $('btn-pause').textContent = 'Pause'; render();
+}
+function resetTimer() {                                  // back to the start screen
+  clearInterval(tickId); paused = false;
+  document.title = APP_NAME; $('announce').textContent = '';
+  show('start');
+}
+function onTimeUp() {                                    // the countdown hit 0
+  clearInterval(tickId);
+  document.title = 'Break time \u00b7 ' + APP_NAME;
+  $('announce').textContent = 'Time for a break.';
+  show('up');
+  pop.startButterfly();
+}
+
+document.querySelectorAll('.choices button').forEach(b => b.addEventListener('click', () => {
+  chosenMin = +b.dataset.min;
+  document.querySelectorAll('.choices button').forEach(o => o.setAttribute('aria-pressed', o === b));
+}));
+$('btn-start').addEventListener('click', () => startTimer(chosenMin * MINUTE));
+$('btn-pause').addEventListener('click', () => (paused ? resumeTimer() : pauseTimer()));
+$('btn-reset').addEventListener('click', resetTimer);
 </script>
 </body>
 </html>
