@@ -29,6 +29,7 @@
            transition: transform 120ms ease-out, background-color 120ms ease-out; }
   button:active { transform: scale(0.97); }
   button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  #btn-close:focus-visible { outline-color: #fff; box-shadow: 0 0 0 2px #fff, 0 0 0 7px var(--text), 0 4px 16px rgba(0, 0, 0, 0.35); }   /* white band with a brown rim: visible on light and near-black pages */
   .choices button[aria-pressed="true"] { background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); font-weight: 700; }
   .choices button[aria-pressed="true"]::before { content: "\2713\00a0"; }   /* a tick, so the selected state is not colour-only */
   .big { min-height: 56px; padding: 12px 56px; font-size: 1.5rem; font-weight: 700; background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); }
@@ -44,6 +45,9 @@
                min-height: 56px; padding: 12px 40px; font-size: 1.25rem; font-weight: 700; white-space: nowrap;
                background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink);
                box-shadow: 0 0 0 2px #fff, 0 4px 16px rgba(0, 0, 0, 0.35); }   /* white ring + soft shadow: readable on light or dark */
+  #btn-close .keycap { display: inline-block; margin-left: 12px; padding: 1px 8px; font-size: 12px; font-weight: 400; line-height: 1.4; vertical-align: middle;
+                       border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 5px; color: var(--on-ink); }   /* keyboard-key look; text stays solid white */
+  @media (hover: none), (pointer: coarse) { #btn-close .keycap { display: none; } }   /* touch users have no space bar */
   #btn-close:active { transform: translateX(-50%) scale(0.97); }
   @media (prefers-reduced-motion: reduce) { #btn-close:active { transform: translateX(-50%); } }
   /* TEMPORARY test bar (only shown with ?debug) */
@@ -63,7 +67,7 @@
     </div>
     <button type="button" class="big" id="btn-start">Start</button>
     <div class="demo-skip">   <!-- demo helper: jump straight to the butterfly -->
-      <p id="skip-note">Normally this waits 20-60 min. Skip ahead to meet the butterfly.</p>
+      <p id="skip-note">Normally this waits 20 to 60 min. Skip ahead to meet the butterfly.</p>
       <button type="button" id="btn-skip" aria-describedby="skip-note">Skip to the end</button>
     </div>
   </section>
@@ -79,7 +83,7 @@
   <section id="screen-up" hidden></section>
   <div id="announce" class="sr-only" aria-live="polite"></div>
 </main>
-<button type="button" id="btn-close" hidden>Close for now</button>
+<button type="button" id="btn-close" aria-keyshortcuts="Space" hidden>Close for now<span class="keycap" aria-hidden="true">space</span></button>
 <!-- TEMPORARY: butterfly test buttons, only shown with ?debug -->
 <div id="test-bar" hidden>
   <button onclick="pop.startButterfly()">Start butterfly</button>
