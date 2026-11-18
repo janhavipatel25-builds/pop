@@ -37,3 +37,9 @@ Thumbs.db
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Browser-test screenshots and logs
+.playwright-mcp/
+
+# Other people's reference images and videos: keep local, do not publish
+explorations/*/inspiration/
