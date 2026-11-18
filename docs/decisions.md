@@ -26,3 +26,7 @@ Date · decision · why
 | 2026-11-17 | If ignored, the butterfly goes away by itself after 10 minutes | Gentle: a reminder, not a nag |
 | 2026-11-17 | Pressing the button makes the butterfly fly away; no auto-restart, the person taps to start again | Calm exit; she stays in control |
 | 2026-11-17 | Rest prompts, nature sounds and more garden elements are out of V1 | Keep V1 small |
+| 2026-11-18 | Reduced motion: butterfly fly-in and fly-away stay as they are for V1 (calmer flap, no cursor push) | Revisit after V1 |
+| 2026-11-18 | Working screen gets no hidden heading in V1 | It is only a timer and two buttons |
+| 2026-11-18 | Legibility halo behind the dots: not in the web demo; revisit in the Mac app, where the butterfly floats over any app | The demo sits on a paper-coloured page; red-orange dots get lost on green/orange/red backgrounds |
+| 2026-11-18 | "Close for now" button shows a small "space" key-cap to hint the Space key (hidden on touch screens) | Teaches the keyboard shortcut; fits the keyboard-first approach |
