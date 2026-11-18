@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pop</title>
+<style>
+  /* Design tokens: change the look here */
+  :root {
+    --paper: #f1e4dc;
+    --ink: #d9482b;        /* red-orange: buttons, borders (3.4:1 on paper, so large/bold text only) */
+    --ink-fill: #c43d20;   /* a touch deeper, for filled buttons: white text on it is 5.2:1 */
+    --text: #7a3a28;       /* brown: body text (about 6.8:1 on paper) */
+    --on-ink: #fff;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, monospace;
+    --space: 24px;
+  }
+  html, body { margin: 0; height: 100%; overflow-x: hidden; background: var(--paper); color: var(--text); font-family: var(--font); }
+  /* The canvas floats over the page (above the UI) and never blocks clicks */
+  canvas { position: fixed; inset: 0; z-index: 5; display: block; width: 100vw; height: 100vh; pointer-events: none; }
+  main { min-height: 100%; box-sizing: border-box; padding: var(--space); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space); text-align: center; }
+  main > section { display: flex; flex-direction: column; align-items: center; gap: var(--space); max-width: 100%; }
+  [hidden] { display: none !important; }
+  h1 { margin: 0; font-size: 3rem; line-height: 1.1; }
+  p { margin: 0; font-size: 1.125rem; }
+  .choices { display: flex; gap: 8px; }
+  button { font: inherit; min-height: 44px; padding: 8px 20px; border: 2px solid var(--ink); border-radius: 999px; background: transparent; color: var(--text); cursor: pointer;
+           transition: transform 120ms ease-out, background-color 120ms ease-out; }
+  button:active { transform: scale(0.97); }
+  button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  #btn-close:focus-visible { outline-color: #fff; box-shadow: 0 0 0 2px #fff, 0 0 0 7px var(--text), 0 4px 16px rgba(0, 0, 0, 0.35); }   /* white band with a brown rim: visible on light and near-black pages */
+  .choices button[aria-pressed="true"] { background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); font-weight: 700; }
+  .choices button[aria-pressed="true"]::before { content: "\2713\00a0"; }   /* a tick, so the selected state is not colour-only */
+  .big { min-height: 56px; padding: 12px 56px; font-size: 1.5rem; font-weight: 700; background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); }
+  .demo-skip { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .demo-skip p { font-size: 0.9375rem; }
+  #btn-skip { font-size: 0.9375rem; border-width: 1px; border-color: var(--text); }   /* quiet: smaller, thin border */
+  .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  #count { font-family: var(--mono); font-size: clamp(4rem, 22vw, 8rem); font-weight: 700; line-height: 1; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } button:active { transform: none; } }
+  /* "Close for now": fixed at the bottom-centre, above the butterfly canvas */
+  #btn-close { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 10;
+               min-height: 56px; padding: 12px 40px; font-size: 1.25rem; font-weight: 700; white-space: nowrap;
+               background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink);
+               box-shadow: 0 0 0 2px #fff, 0 4px 16px rgba(0, 0, 0, 0.35); }   /* white ring + soft shadow: readable on light or dark */
+  #btn-close .keycap { display: inline-block; margin-left: 12px; padding: 1px 8px; font-size: 12px; font-weight: 400; line-height: 1.4; vertical-align: middle;
+                       border: 1px solid rgba(255, 255, 255, 0.7); border-radius: 5px; color: var(--on-ink); }   /* keyboard-key look; text stays solid white */
+  @media (hover: none), (pointer: coarse) { #btn-close .keycap { display: none; } }   /* touch users have no space bar */
+  #btn-close:active { transform: translateX(-50%) scale(0.97); }
+  @media (prefers-reduced-motion: reduce) { #btn-close:active { transform: translateX(-50%); } }
+</style>
+</head>
+<body>
+<main>
+  <!-- Start screen -->
+  <section id="screen-start">
+    <h1 class="app-name">Pop</h1>   <!-- the app name lives here (and in <title>) -->
+    <p>A little garden for your breaks.</p>
+    <div class="choices" role="group" aria-label="Minutes until your break">
+      <button type="button" data-min="20" aria-pressed="true">20 min</button>
+      <button type="button" data-min="40" aria-pressed="false">40 min</button>
+      <button type="button" data-min="60" aria-pressed="false">60 min</button>
+    </div>
+    <button type="button" class="big" id="btn-start">Start</button>
+    <div class="demo-skip">   <!-- demo helper: jump straight to the butterfly -->
+      <p id="skip-note">Normally this waits 20 to 60 min. Skip ahead to meet the butterfly.</p>
+      <button type="button" id="btn-skip" aria-describedby="skip-note">Skip to the end</button>
+    </div>
+  </section>
+  <!-- Working screen -->
+  <section id="screen-work" hidden>
+    <div id="count" role="timer" aria-live="off">20m</div>
+    <div class="row">
+      <button type="button" id="btn-pause">Pause</button>
+      <button type="button" id="btn-reset">Reset</button>
+    </div>
+  </section>
+  <!-- Time's up: nothing on screen but the butterfly (and the Close button below). Screen readers still hear "Time for a break." from the hidden #announce line. -->
+  <section id="screen-up" hidden></section>
+  <div id="announce" class="sr-only" aria-live="polite"></div>
+</main>
+<button type="button" id="btn-close" aria-keyshortcuts="Space" hidden>Close for now<span class="keycap" aria-hidden="true">space</span></button>
+<canvas id="c" aria-hidden="true"></canvas>   <!-- decorative: the break is announced by #announce -->
+<script>
+/* ---- Tweak these ------------------------------------------------------ */
+const CFG = {
+  ink: '#d9482b',          // red-orange, like the flash sheet
+  size: 150,               // body length in px (the wings are about 1.2x this on each side)
+  step: 0.038,             // dot spacing on the wings (smaller = finer, slower)
+  cameraTilt: 0.5,         // radians: 0 = camera level with the butterfly (pure side view), 1.57 = straight down
+  focal: 1500,             // perspective strength (smaller = stronger)
+  speed: 160,              // flight speed in px per second
+  turn: 1,                 // how sharp the sudden direction changes are (0 = none)
+  flapRate: 16,            // flap speed in radians per second (14 is about 2 beats a second)
+  bob: 130,                // how much it rises on each wing-down stroke
+  bankMax: 0.08, bankScale: 0.06,   // how far it leans into turns (a lean makes one wing look higher than the other)
+  sway: 0.05,              // how much the abdomen swings with each beat
+  perchEvery: [8, 13],     // seconds of flying before it looks for a place to land
+  repelRadius: 130,        // how far the cursor pushes dots, in px
+  repelForce: 4200,        // how hard it pushes
+  lag: 0.12,               // how much the dots trail behind when the butterfly turns (0 = rigid)
+  kBody: 90, kEdge: 40,    // spring stiffness: body snaps back, wing edges lag behind
+  zeta: 0.75,              // springiness (lower = bouncier)
+};
+/* ----------------------------------------------------------------------- */
+
+const Q = new URLSearchParams(location.search);          // ?freeze=1&tilt=1.57 shows a fixed top-down view (for checking the shape)
+const FREEZE = Q.has('freeze');
+const SIDE = Q.has('side');                              // ?side=1&phase=0&bank=0 holds a side-on flying pose (for checking the flap)
+const DBG_BANK = Q.has('bank') ? parseFloat(Q.get('bank')) : 0;
+if (Q.has('tilt')) CFG.cameraTilt = parseFloat(Q.get('tilt'));
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const TAU = Math.PI * 2;
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;   // reduced motion: slower and gentler
+const MOTION = calm ? 0.35 : 1;
+let W, H, DPR;
+function resize() {
+  DPR = devicePixelRatio || 1; W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR; ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize); resize();
+
+/* ======================================================================
+   1. THE SHAPE: wing outlines, drawn as smooth curves through a few points.
+   Wing space: u = out from the body, v = along the body (+ is toward the head).
+   ====================================================================== */
+const FOREWING = [[0.05,0.22],[0.28,0.46],[0.62,0.70],[0.98,0.84],[1.18,0.80],[1.24,0.62],[1.14,0.36],
+                  [0.96,0.16],[0.72,0.06],[0.40,0.02],[0.08,0.00]];
+const HINDWING = [[0.06,0.02],[0.42,0.06],[0.80,0.00],[1.00,-0.22],[1.02,-0.50],[0.86,-0.78],[0.66,-0.98],
+                  [0.60,-1.14],[0.50,-0.96],[0.30,-0.74],[0.10,-0.46]];
+function smoothLoop(p, seg = 10) {                     // Catmull-Rom: a smooth closed curve through the points
+  const out = [], n = p.length;
+  for (let i = 0; i < n; i++) {
+    const a = p[(i + n - 1) % n], b = p[i], c = p[(i + 1) % n], d = p[(i + 2) % n];
+    for (let s = 0; s < seg; s++) {
+      const t = s / seg, t2 = t * t, t3 = t2 * t;
+      out.push([0, 1].map(k => 0.5 * (2 * b[k] + (-a[k] + c[k]) * t + (2 * a[k] - 5 * b[k] + 4 * c[k] - d[k]) * t2 + (-a[k] + 3 * b[k] - 3 * c[k] + d[k]) * t3)));
+    }
+  }
+  return out;
+}
+function inside(poly, x, y) {
+  let r = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) r = !r;
+  }
+  return r;
+}
+function edgeDist(poly, x, y) {                        // distance from a point to the nearest outline segment
+  let m = 1e9;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ax, ay] = poly[j], [bx, by] = poly[i], dx = bx - ax, dy = by - ay;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy)));
+    m = Math.min(m, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+  }
+  return m;
+}
+const hash = (i, j) => { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return s - Math.floor(s); };
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+/* ======================================================================
+   2. THE DOTS: sample the wings on a grid, then decide each dot's size.
+   Border = dense with pale spots, veins = medium, between veins = sparse,
+   plus an eyespot on the hind wing.
+   ====================================================================== */
+const FW = smoothLoop(FOREWING), HW = smoothLoop(HINDWING);
+// kind 0 = body, 1 = wing, 2 = antenna. Wings use (cu, cv) = (u, v). Body/antennae use (cu, cb, cv) = (side, up, forward).
+const cells = [];
+const add = (c) => cells.push(c);
+const st = CFG.step;
+for (let i = 0; i < Math.ceil(1.4 / st); i++) for (let j = 0; j < Math.ceil(2.2 / st); j++) {
+  const u = 0.03 + i * st, v = -1.2 + j * st;
+  const dF = inside(FW, u, v) ? edgeDist(FW, u, v) : -1, dH = inside(HW, u, v) ? edgeDist(HW, u, v) : -1;
+  const dist = Math.max(dF, dH);
+  if (dist < 0) continue;
+  const border = 1 - smooth(0.0, 0.13, dist);
+  const ang = Math.atan2(v - 0.12, u - 0.08);
+  const vein = Math.abs(Math.sin(ang * 8)) > 0.9 && Math.hypot(u - 0.08, v - 0.12) > 0.12 ? 0.75 : 0;
+  const rootFade = 1 - Math.min(1, Math.hypot(u - 0.08, v - 0.12) / 1.4);
+  let d = Math.max(border, vein, 0.18 + 0.22 * rootFade);
+  const around = Math.atan2(v - 0.1, u - 0.6);
+  if (dist > 0.045 && dist < 0.1 && Math.sin(around * 16) > 0.7) d = 0;               // pale spots in the border
+  const eye = Math.hypot(u - 0.66, v + 0.44);                                            // eyespot on the hind wing
+  if (dH > 0 && eye < 0.19) d = (eye < 0.06 || (eye > 0.11 && eye < 0.14)) ? 0 : 1;
+  if (hash(i, j) > 0.4 + 0.6 * d) continue;                                           // ragged, halftone-like gaps
+  for (const side of [-1, 1]) add({ kind: 1, side, cu: u, cv: v, cb: 0, r: st * (0.22 + 0.3 * d), e: Math.max(border, 0.3) });
+}
+for (let v = -0.7; v <= 0.4; v += 0.045) {                                               // body: a slim tube of dots, a small thorax, a long tapering abdomen, a small head
+  const rad = v > 0.3 ? 0.038 : 0.012 + 0.03 * Math.exp(-Math.pow((v - 0.1) / 0.17, 2)) - 0.006 * Math.max(0, -v - 0.2);
+  const n = Math.max(3, Math.round(rad * TAU / 0.04));
+  for (let k = 0; k < n; k++) { const a = k / n * TAU; add({ kind: 0, side: 0, cu: rad * Math.cos(a), cb: rad * Math.sin(a), cv: v, r: st * 0.36, e: 0 }); }
+}
+for (let t = 0; t <= 1.001; t += 0.09) for (const sg of [-1, 1])                          // antennae, with a small club at the tip
+  add({ kind: 2, side: 0, cu: sg * (0.04 + 0.3 * t), cb: 0.06 + 0.12 * t, cv: 0.5 + 0.46 * t, r: st * (t > 0.95 ? 0.4 : 0.2), e: 1 });
+
+const N = cells.length;
+const dx = new Float32Array(N), dy = new Float32Array(N), dvx = new Float32Array(N), dvy = new Float32Array(N);  // how far each dot is pushed off its home
+const hx = new Float32Array(N), hy = new Float32Array(N), hpx = new Float32Array(N), hpy = new Float32Array(N);  // home position, and last frame's
+const hvx = new Float32Array(N), hvy = new Float32Array(N), sc = new Float32Array(N);
+const kk = new Float32Array(N);
+for (let i = 0; i < N; i++) kk[i] = CFG.kBody + (CFG.kEdge - CFG.kBody) * cells[i].e * (0.8 + 0.4 * hash(i, 9));
+
+/* ======================================================================
+   3. THE FLIGHT: position and heading in 3D. X = across the screen, Y = up, Z = away from the viewer.
+   The camera sits a little above the butterfly (cameraTilt), so flying across the screen shows its side.
+   States: enter -> fly -> seek (head for a wall) -> perch -> takeoff -> fly ...
+   Any state can become 'leave' (fly off the nearest edge of the screen, then stop).
+   ====================================================================== */
+const A = { x: 0, y: 0, z: 0 };
+let time = 0, theta = 0, om = 0, bank = 0, phase = 0, speedNow = 0, speedT = 160, vyS = 0, vz = 0, nextKick = 0.5;
+let leaveTo = { x: 0, y: 0 }, leaveW0 = 0;                // where it is flying off to, and how folded it was when leaving began
+let facing = 1, state = 'enter', stateT = 0, stateDur = 10, perchW = 0, perch = null, first = true, mx = -9999, my = -9999;
+const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const norm = v => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const mix3 = (a, b, w) => [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * w);
+
+function toWorld(sx, sy) {                              // a point on the screen -> a spot at depth 0
+  const ca = Math.cos(CFG.cameraTilt), sa = Math.sin(CFG.cameraTilt); let k = 1, X = 0, Y = 0;
+  for (let n = 0; n < 4; n++) { X = (sx - W / 2) / k; Y = (H / 2 - sy) / (ca * k); k = CFG.focal / (CFG.focal - Y * sa); }
+  return { x: X, y: Y };
+}
+function pickSpot() {                                   // a spot on the left or right wall of the screen
+  const side = Math.random() < 0.5 ? -1 : 1;           // -1 = left wall, +1 = right wall
+  const spot = toWorld(side < 0 ? 36 : W - 36, rnd(0.2, 0.8) * H);
+  return { ...spot, side, head: 1, stage: 1, beta: rnd(-0.35, 0.35) };   // always head up, with a slight lean
+}
+function enter() {                                      // start just off-screen at a random corner, heading in
+  const sx = Math.random() < 0.5 ? -1 : 1, sy = Math.random() < 0.5 ? -1 : 1;
+  A.x = sx * (W / 2 + CFG.size * 1.8); A.y = sy * (H / 2 + CFG.size * 1.8) / Math.cos(CFG.cameraTilt); A.z = 0;
+  theta = Math.atan2(-A.y, -A.x) + rnd(-0.25, 0.25);       // aim roughly at the middle
+  om = 0; bank = 0; vyS = 0; vz = 0; perchW = 0; speedNow = CFG.speed * 1.5; speedT = speedNow;
+  time = 0; stateT = 0; state = 'enter'; first = true;
+  if (FREEZE || SIDE) { A.x = A.y = A.z = 0; theta = Math.PI / 2; state = 'fly'; }
+}
+
+addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; });
+document.addEventListener('pointerleave', () => { mx = my = -9999; });
+
+function update(dt) {
+  time += dt; stateT += dt;
+  const ca = Math.cos(CFG.cameraTilt), sa = Math.sin(CFG.cameraTilt), s = CFG.size;
+
+  // Wings: always beating (no long glides), downstroke lifts
+  const actv = 0.85 + 0.15 * Math.sin(time * 0.6 + 1);
+  let base = 0.85, amp = 0.4 + 0.2 * actv, rate = CFG.flapRate * (0.8 + 0.2 * actv) * MOTION;
+  if (perchW > 0.001) {                                  // folding up on the wall: wings upright, a few small slow flaps, then still
+    const env = state === 'perch' ? 1 - smooth(2.2, 3.4, stateT) : 1;
+    base = lerp(base, 1.5 - 0.35 * env, perchW); amp = lerp(amp, 0.03 + 0.35 * env, perchW); rate = lerp(rate, 6, perchW);
+  }
+  if (FREEZE) { base = 0; amp = 0; }
+  if (SIDE) { phase = parseFloat(Q.get('phase') || 0); rate = 0; } else phase += dt * rate;
+
+  // Flight path
+  let sp = 0, vzS = 0;
+  if (!FREEZE && !SIDE) {
+    const margin = s * 1.4;
+    const out = Math.max(Math.abs(A.x) / (W / 2 - margin), Math.abs(A.y * ca + A.z * sa) / (H / 2 - margin));
+    if (state === 'perch') {
+      om = 0; speedNow = 0; vyS *= 0.9; perchW = 1;
+      A.x += (perch.x - A.x) * Math.min(1, dt * 4); A.y += (perch.y - A.y) * Math.min(1, dt * 4); A.z += (0 - A.z) * Math.min(1, dt * 4);
+      if (stateT > stateDur) { state = 'takeoff'; stateT = 0; theta = Math.atan2(-A.y, -A.x) + rnd(-0.5, 0.5); }
+    } else {
+      nextKick -= dt;                                      // erratic: sudden little swerves and speed changes
+      if (nextKick < 0 && state !== 'enter' && state !== 'leave') {
+        nextKick = rnd(0.9, 2.4);
+        om += (Math.random() < 0.5 ? -1 : 1) * rnd(0.5, 1.2) * (Math.random() < 0.12 ? 1.8 : 1) * CFG.turn * MOTION;
+        speedT = CFG.speed * rnd(0.75, 1.25);
+      }
+      om *= Math.exp(-1.5 * dt);
+      let steer = 0, zT = 220 * Math.sin(time * 0.17 + 1) + 80 * Math.sin(time * 0.43);   // drifts nearer and farther from you
+      if (state === 'fly' || state === 'takeoff') steer = -0.7 * Math.sin(2 * theta) * MOTION;      // mostly flies across the screen, side to side
+      if (state === 'enter') {
+        steer = 3 * clamp(wrap(Math.atan2(-A.y, -A.x) - theta), -1.2, 1.2); om = 0; speedT = CFG.speed * 1.5; zT = 0;
+        if (out < 0.95) { state = 'fly'; stateT = 0; stateDur = rnd(...CFG.perchEvery); }
+      } else if (state === 'leave') {                      // fly off the screen: no turning back from the edges here
+        steer = 4 * clamp(wrap(Math.atan2(leaveTo.y - A.y, leaveTo.x - A.x) - theta), -1.4, 1.4);
+        om *= 0.3; zT = 0; speedT = CFG.speed * 2.2 * (0.15 + 0.85 * smooth(0, 0.8, stateT));
+        perchW = leaveW0 * (1 - smooth(0, 0.7, stateT));   // unfold smoothly if it was perched or landing
+      } else if (out > 0.85 && state !== 'seek') {         // near an edge: turn back toward the middle
+        steer = clamp(wrap(Math.atan2(-A.y, -A.x) - theta), -1.2, 1.2) * 3 * Math.min(1, (out - 0.85) * 4);
+      }
+      if (state === 'fly' && stateT > stateDur) { state = 'seek'; stateT = 0; perch = pickSpot(); }
+      if (state === 'seek') {                              // head for the wall, slowing down as it gets close
+        // stage 1: fly to a point below and out from the wall; stage 2: swing up onto it, so it always arrives head-up
+        const ddx = perch.x - A.x, ddy = perch.y - A.y, dist = Math.hypot(ddx, ddy);
+        const tx = perch.stage === 1 ? perch.x - perch.side * 150 : perch.x, ty = perch.stage === 1 ? perch.y - 140 : perch.y;
+        const toT = Math.hypot(tx - A.x, ty - A.y);
+        if (perch.stage === 1 && toT < 90) perch.stage = 2;
+        steer = 4 * clamp(wrap(Math.atan2(ty - A.y, tx - A.x) - theta), -1.4, 1.4); om *= 0.25; zT = 0;
+        speedT = Math.min(CFG.speed, 40 + toT * 1.2);
+        perchW = perch.stage === 2 ? smooth(0, 1, 1 - dist / 230) : 0;
+        if (perch.stage === 2 && dist < 70) { A.x += ddx * Math.min(1, dt * 2.5); A.y += ddy * Math.min(1, dt * 2.5); }
+        if (perch.stage === 2 && dist < 10) { state = 'perch'; stateT = 0; stateDur = rnd(5, 8); }
+      }
+      if (state === 'takeoff') {
+        perchW = 1 - smooth(0, 0.9, stateT); speedT = 20 + CFG.speed * smooth(0, 0.8, stateT);
+        if (stateT > 0.9) { state = 'fly'; stateT = 0; stateDur = rnd(...CFG.perchEvery); perchW = 0; }
+      }
+      if (state === 'fly' || state === 'enter') perchW = 0;
+      theta += (om + steer) * dt;
+      speedNow += (speedT * (state === 'enter' || state === 'leave' ? 1 : MOTION) - speedNow) * Math.min(1, dt * 3.5);
+      sp = speedNow * (1 + 0.22 * Math.sin(phase + 0.6));                       // hop forward on each beat
+      vz = clamp((zT - A.z) * 0.7, -160, 160) * MOTION; vzS = vz;
+      const liftV = CFG.bob * Math.sin(phase) * MOTION;
+      const vyHead = Math.sin(theta) * sp;
+      A.x += Math.cos(theta) * sp * dt; A.y += (vyHead + liftV) * dt; A.z += vz * dt;
+      vyS += (vyHead + liftV * 0.3 - vyS) * Math.min(1, dt * 6);
+      bank += (clamp((om + steer) * CFG.bankScale, -CFG.bankMax, CFG.bankMax) - bank) * Math.min(1, dt * 4);
+    }
+  } else { bank = SIDE ? DBG_BANK : 0; }
+
+  // The butterfly's own directions: f = forward, r = sideways, u = up
+  const spd = Math.max(sp, 60);
+  if (Math.cos(theta) > 0.25) facing = 1; else if (Math.cos(theta) < -0.25) facing = -1;       // which way its head points, left or right
+  const f = FREEZE ? [0, 0, 1] : SIDE ? [1, 0, 0] : norm([facing * (0.5 + 0.5 * Math.abs(Math.cos(theta))) * spd, vyS * 0.25, vzS]);   // body stays near-level, never diving head-first
+  const r0 = norm(cross([0, 1, 0], f)), u0 = cross(f, r0);
+  const cb = Math.cos(bank), sb = Math.sin(bank);
+  const r1 = [0, 1, 2].map(i => r0[i] * cb + u0[i] * sb), u1 = [0, 1, 2].map(i => u0[i] * cb - r0[i] * sb);
+  const pitch = 0.3 + 0.08 * Math.sin(phase + 0.4);                                  // the body tips a little with each beat
+  let f2 = norm([0, 1, 2].map(i => f[i] + u1[i] * pitch)), u2 = cross(f2, r1), r2 = r1;
+  if (perchW > 0.001 && perch) {                         // landing on a side wall: body along the wall, wings fold up and point away from it
+    const upS = [0, ca, sa], rightS = [1, 0, 0], b = perch.beta;
+    const fp = norm([0, 1, 2].map(i => perch.head * Math.cos(b) * upS[i] + Math.sin(b) * rightS[i]));
+    const uP = [-perch.side, 0, 0], w = perchW;
+    f2 = norm(mix3(f2, fp, w));
+    const uB = mix3(u2, uP, w), d = uB[0] * f2[0] + uB[1] * f2[1] + uB[2] * f2[2];
+    u2 = norm([0, 1, 2].map(i => uB[i] - f2[i] * d)); r2 = cross(u2, f2);
+  }
+
+  for (let i = 0; i < N; i++) {
+    const c = cells[i];
+    let ox, oy, oz;
+    if (c.kind === 1) {                                  // wing point: swing it up and down, tip a little behind the root
+      const psi = phase - 0.8 * c.cu, phi = base + amp * Math.cos(psi + 0.2 * (1 - Math.cos(psi))), cc = Math.cos(phi) * c.side, ss = Math.sin(phi);
+      ox = c.cv * f2[0] + c.cu * (cc * r2[0] + ss * u2[0]);
+      oy = c.cv * f2[1] + c.cu * (cc * r2[1] + ss * u2[1]);
+      oz = c.cv * f2[2] + c.cu * (cc * r2[2] + ss * u2[2]);
+    } else {                                             // body and antennae; the abdomen swings behind each beat
+      const sw = c.kind === 0 && c.cv < 0.15 ? (0.15 - c.cv) * CFG.sway * Math.cos(phase + 0.9) * (1 - perchW) : 0;
+      ox = c.cv * f2[0] + c.cu * r2[0] + (c.cb + sw) * u2[0];
+      oy = c.cv * f2[1] + c.cu * r2[1] + (c.cb + sw) * u2[1];
+      oz = c.cv * f2[2] + c.cu * r2[2] + (c.cb + sw) * u2[2];
+    }
+    const X = A.x + s * ox, Y = A.y + s * oy, Z = A.z + s * oz;
+    const sc_ = CFG.focal / (CFG.focal + Z * ca - Y * sa);                  // closer = bigger
+    sc[i] = sc_;
+    hx[i] = W / 2 + X * sc_; hy[i] = H / 2 - (Y * ca + Z * sa) * sc_;
+  }
+
+  for (let i = 0; i < N; i++) {                                              // springs: dots trail a little, cursor pushes them
+    let ax, ay;
+    if (first) { hpx[i] = hx[i]; hpy[i] = hy[i]; hvx[i] = hvy[i] = 0; }
+    const nvx = (hx[i] - hpx[i]) / dt, nvy = (hy[i] - hpy[i]) / dt;
+    ax = clamp((nvx - hvx[i]) / dt, -5000, 5000); ay = clamp((nvy - hvy[i]) / dt, -5000, 5000);
+    hvx[i] = nvx; hvy[i] = nvy; hpx[i] = hx[i]; hpy[i] = hy[i];
+    const k = kk[i], c = 2 * CFG.zeta * Math.sqrt(k), lagK = CFG.lag * (0.2 + 0.8 * cells[i].e);
+    let fx = -k * dx[i] - c * dvx[i] - lagK * ax, fy = -k * dy[i] - c * dvy[i] - lagK * ay;
+    const ex = hx[i] + dx[i] - mx, ey = hy[i] + dy[i] - my, d = Math.hypot(ex, ey);
+    if (d < CFG.repelRadius && d > 0.01) {
+      const f_ = calm ? 0 : Math.pow(1 - d / CFG.repelRadius, 2) * CFG.repelForce;   // reduced motion: the cursor does not push the dots
+      fx += ex / d * f_; fy += ey / d * f_;
+    }
+    dvx[i] += fx * dt; dvy[i] += fy * dt; dx[i] += dvx[i] * dt; dy[i] += dvy[i] * dt;
+  }
+  first = false;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);                             // transparent: the page shows through
+  ctx.fillStyle = CFG.ink; ctx.beginPath();
+  for (let i = 0; i < N; i++) {
+    const r = cells[i].r * CFG.size * sc[i], x = hx[i] + dx[i], y = hy[i] + dy[i];
+    ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, TAU);
+  }
+  ctx.fill();
+}
+
+/* ======================================================================
+   4. START / STOP: the page decides when the butterfly appears.
+   ====================================================================== */
+let running = false, leaving = false, rafId = 0, last = 0, leaveCbs = [];
+function loop(now) {
+  const dt = Math.max(0.001, Math.min((now - last) / 1000, 0.05)); last = now;
+  update(dt);
+  if (leaving && (isGone() || stateT > 8)) { finishLeave(); return; }   // gone (or 8 s safety net): stop without drawing
+  draw(); rafId = requestAnimationFrame(loop);
+}
+function screenPos() {                                   // where the butterfly's anchor is on the screen
+  const ca = Math.cos(CFG.cameraTilt), sa = Math.sin(CFG.cameraTilt);
+  const k = CFG.focal / (CFG.focal + A.z * ca - A.y * sa);
+  return { x: W / 2 + A.x * k, y: H / 2 - (A.y * ca + A.z * sa) * k };
+}
+function isGone() {                                      // far enough past an edge that every dot is off-screen
+  const p = screenPos(), m = CFG.size * 1.7;
+  return p.x < -m || p.x > W + m || p.y < -m || p.y > H + m;
+}
+function finishLeave() {                                 // stop everything, then tell whoever is waiting
+  const cbs = leaveCbs; leaveCbs = [];
+  stopButterflyNow();
+  cbs.forEach(f => f());
+}
+function startButterfly() {
+  if (leaving) stopButterflyNow();                       // still flying away: cut it short, then start fresh
+  if (running) return;                                   // already flying: do nothing (no double loops)
+  running = true;
+  enter();
+  last = performance.now();
+  rafId = requestAnimationFrame(loop);
+}
+function leaveButterfly(onGone) {                        // fly off the nearest edge, then call onGone
+  if (!running) { if (onGone) onGone(); return; }
+  if (onGone) leaveCbs.push(onGone);
+  if (leaving) return;
+  const ca = Math.cos(CFG.cameraTilt), margin = CFG.size * 1.4;
+  const out = Math.max(Math.abs(A.x) / (W / 2 - margin), Math.abs(A.y * ca + A.z * Math.sin(CFG.cameraTilt)) / (H / 2 - margin));
+  if (state === 'enter' && out > 1.2) { leaving = true; finishLeave(); return; }   // still off-screen: nothing to animate
+  const p = screenPos(), gap = CFG.size * 2.5;
+  const edges = [[p.x, -gap, p.y], [W - p.x, W + gap, p.y], [p.y, p.x, -gap], [H - p.y, p.x, H + gap]];   // [distance, target x, target y]
+  const e = edges.reduce((a, b) => (b[0] < a[0] ? b : a));
+  leaveTo = toWorld(e[1], e[2]);                          // a point beyond the edge (not clamped, or top/bottom exits stall at the edge)
+  leaveW0 = perchW; leaving = true; state = 'leave'; stateT = 0;
+  theta = Math.atan2(leaveTo.y - A.y, leaveTo.x - A.x);
+}
+function stopButterfly() { leaveButterfly(); }           // stopping = flying away
+function stopButterflyNow() {                            // instant stop, no animation
+  const cbs = leaveCbs; leaveCbs = [];
+  running = false; leaving = false;
+  cancelAnimationFrame(rafId);
+  ctx.clearRect(0, 0, W, H);                             // leave nothing on screen
+  cbs.forEach(f => f());
+}
+window.pop = { startButterfly, stopButterfly, stopButterflyNow, leaveButterfly, getState: () => (running ? state : 'idle') };
+</script>
+<script>
+/* ======================================================================
+   5. THE TIMER AND SCREENS. Uses only window.pop (the butterfly API above).
+   ====================================================================== */
+const FAST = new URLSearchParams(location.search).has('fast');   // ?fast=1: each "minute" lasts 1 second, for quick testing
+const MINUTE = FAST ? 1000 : 60000;
+const AUTO_LEAVE_MS = 10 * MINUTE;                       // ignored butterfly flies away by itself after this long (10 s with ?fast=1)
+const $ = id => document.getElementById(id);
+const screens = { start: $('screen-start'), work: $('screen-work'), up: $('screen-up') };
+const APP_NAME = document.querySelector('.app-name').textContent;
+let chosenMin = 20, endAt = 0, remaining = 0, paused = false, tickId = 0, lastSaid = '';
+let butterflyOut = false, appearedAt = 0, autoLeaveId = 0;   // is the butterfly out, since when, and the timer that checks the 10 minutes
+
+function show(name) { for (const k in screens) screens[k].hidden = k !== name; }
+function label(ms) {                                     // "18m" while a minute or more is left (rounded up), then "42s"
+  const secs = Math.ceil(ms / MINUTE * 60);               // scaled so ?fast=1 reads like normal
+  return secs >= 60 ? Math.ceil(secs / 60) + 'm' : secs + 's';
+}
+function render() {
+  const ms = paused ? remaining : Math.max(0, endAt - Date.now());
+  const text = label(ms);
+  $('count').textContent = text;
+  document.title = text + ' \u00b7 ' + APP_NAME;
+  if (/m$/.test(text) && text !== lastSaid) { lastSaid = text; $('announce').textContent = text + ' left'; }   // screen readers: once per minute
+  return ms;
+}
+function tick() { if (!paused && render() <= 0) onTimeUp(); }
+
+function startTimer(ms) {                                // begin counting down from ms
+  clearInterval(tickId);
+  paused = false; endAt = Date.now() + ms; remaining = ms; lastSaid = '';
+  $('btn-pause').textContent = 'Pause';
+  show('work'); render();
+  $('btn-pause').focus();                                // the Start button just vanished, so keep keyboard focus on screen
+  tickId = setInterval(tick, 250);
+}
+function pauseTimer() {                                  // remember how much is left
+  if (paused) return;
+  remaining = Math.max(0, endAt - Date.now()); paused = true;
+  $('btn-pause').textContent = 'Resume';
+}
+function resumeTimer() {                                 // set a fresh end time from what was left
+  if (!paused) return;
+  endAt = Date.now() + remaining; paused = false;
+  $('btn-pause').textContent = 'Pause'; render();
+}
+function resetTimer() {                                  // back to the start screen
+  clearInterval(tickId); paused = false;
+  document.title = APP_NAME; $('announce').textContent = '';
+  show('start');
+  $('btn-start').focus();                                // the Reset button just vanished: land on Start
+}
+function onTimeUp() {                                    // the countdown hit 0
+  clearInterval(tickId);
+  document.title = 'Break time \u00b7 ' + APP_NAME;
+  $('announce').textContent = 'Time for a break.';
+  show('up');
+  pop.startButterfly();
+  butterflyOut = true; appearedAt = Date.now();
+  $('btn-close').hidden = false; $('btn-close').focus();
+  clearInterval(autoLeaveId);
+  autoLeaveId = setInterval(() => { if (Date.now() - appearedAt >= AUTO_LEAVE_MS) closeButterfly(); }, 500);   // real clock, so a sleepy background tab still counts
+}
+function closeButterfly() {                              // the ONE way out: button, Esc, Enter/Space or the 10-minute timeout
+  if (!butterflyOut) return;                             // already closing: ignore a second press
+  butterflyOut = false;
+  clearInterval(autoLeaveId);
+  $('btn-close').hidden = true;
+  pop.leaveButterfly(onButterflyGone);
+}
+function onButterflyGone() {                             // the butterfly has left the screen: back to the start, never auto-restart
+  document.title = APP_NAME;
+  $('announce').textContent = 'Ready when you are.';
+  $('btn-start').textContent = 'Start again';
+  show('start');
+  $('btn-start').focus();
+}
+
+document.querySelectorAll('.choices button').forEach(b => b.addEventListener('click', () => {
+  chosenMin = +b.dataset.min;
+  document.querySelectorAll('.choices button').forEach(o => o.setAttribute('aria-pressed', o === b));
+}));
+$('btn-start').addEventListener('click', () => startTimer(chosenMin * MINUTE));
+$('btn-skip').addEventListener('click', onTimeUp);       // demo: same path as the timer reaching 0
+$('btn-pause').addEventListener('click', () => (paused ? resumeTimer() : pauseTimer()));
+$('btn-reset').addEventListener('click', resetTimer);
+$('btn-close').addEventListener('click', closeButterfly);   // Enter/Space on the focused button already "click" it, so no extra handler for those
+document.addEventListener('keydown', e => {
+  if (e.repeat && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); return; }   // a held-down Enter/Space must not press the next button too (preventDefault stops the native click)
+  if (!butterflyOut || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'Escape') closeButterfly();
+  else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); closeButterfly(); }
+});
+</script>
+</body>
+</html>
