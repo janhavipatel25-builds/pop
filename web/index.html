@@ -32,6 +32,9 @@
   .choices button[aria-pressed="true"] { background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); font-weight: 700; }
   .choices button[aria-pressed="true"]::before { content: "\2713\00a0"; }   /* a tick, so the selected state is not colour-only */
   .big { min-height: 56px; padding: 12px 56px; font-size: 1.5rem; font-weight: 700; background: var(--ink-fill); border-color: var(--ink-fill); color: var(--on-ink); }
+  .demo-skip { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .demo-skip p { font-size: 0.9375rem; }
+  #btn-skip { font-size: 0.9375rem; border-width: 1px; border-color: var(--text); }   /* quiet: smaller, thin border */
   .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   #count { font-family: var(--mono); font-size: clamp(4rem, 22vw, 8rem); font-weight: 700; line-height: 1; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
@@ -59,6 +62,10 @@
       <button type="button" data-min="60" aria-pressed="false">60 min</button>
     </div>
     <button type="button" class="big" id="btn-start">Start</button>
+    <div class="demo-skip">   <!-- demo helper: jump straight to the butterfly -->
+      <p id="skip-note">Normally this waits 20-60 min. Skip ahead to meet the butterfly.</p>
+      <button type="button" id="btn-skip" aria-describedby="skip-note">Skip to the end</button>
+    </div>
   </section>
   <!-- Working screen -->
   <section id="screen-work" hidden>
@@ -78,7 +85,7 @@
   <button onclick="pop.startButterfly()">Start butterfly</button>
   <button onclick="pop.stopButterfly()">Stop butterfly</button>
 </div>
-<canvas id="c" aria-label="A butterfly made of red-orange dots flies around the screen" role="img"></canvas>
+<canvas id="c" aria-hidden="true"></canvas>   <!-- decorative: the break is announced by #announce -->
 <script>
 /* ---- Tweak these ------------------------------------------------------ */
 const CFG = {
@@ -366,7 +373,7 @@ function update(dt) {
     let fx = -k * dx[i] - c * dvx[i] - lagK * ax, fy = -k * dy[i] - c * dvy[i] - lagK * ay;
     const ex = hx[i] + dx[i] - mx, ey = hy[i] + dy[i] - my, d = Math.hypot(ex, ey);
     if (d < CFG.repelRadius && d > 0.01) {
-      const f_ = Math.pow(1 - d / CFG.repelRadius, 2) * CFG.repelForce * MOTION;
+      const f_ = calm ? 0 : Math.pow(1 - d / CFG.repelRadius, 2) * CFG.repelForce;   // reduced motion: the cursor does not push the dots
       fx += ex / d * f_; fy += ey / d * f_;
     }
     dvx[i] += fx * dt; dvy[i] += fy * dt; dx[i] += dvx[i] * dt; dy[i] += dvy[i] * dt;
@@ -474,6 +481,7 @@ function startTimer(ms) {                                // begin counting down 
   paused = false; endAt = Date.now() + ms; remaining = ms; lastSaid = '';
   $('btn-pause').textContent = 'Pause';
   show('work'); render();
+  $('btn-pause').focus();                                // the Start button just vanished, so keep keyboard focus on screen
   tickId = setInterval(tick, 250);
 }
 function pauseTimer() {                                  // remember how much is left
@@ -490,6 +498,7 @@ function resetTimer() {                                  // back to the start sc
   clearInterval(tickId); paused = false;
   document.title = APP_NAME; $('announce').textContent = '';
   show('start');
+  $('btn-start').focus();                                // the Reset button just vanished: land on Start
 }
 function onTimeUp() {                                    // the countdown hit 0
   clearInterval(tickId);
@@ -522,6 +531,7 @@ document.querySelectorAll('.choices button').forEach(b => b.addEventListener('cl
   document.querySelectorAll('.choices button').forEach(o => o.setAttribute('aria-pressed', o === b));
 }));
 $('btn-start').addEventListener('click', () => startTimer(chosenMin * MINUTE));
+$('btn-skip').addEventListener('click', onTimeUp);       // demo: same path as the timer reaching 0
 $('btn-pause').addEventListener('click', () => (paused ? resumeTimer() : pauseTimer()));
 $('btn-reset').addEventListener('click', resetTimer);
 $('btn-close').addEventListener('click', closeButterfly);   // Enter/Space on the focused button already "click" it, so no extra handler for those

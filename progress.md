@@ -56,3 +56,6 @@ Living status log. Read at the start of every session; update at the end.
   - Perf: first sphere version was 1.7 fps; reworked (pre-drawn character images, sphere laid out once) to ~59 fps in test browser.
   - Open: characters may now be too small to read as letters; ask Jahnavi if she wants them more legible. Not yet tested: popping in the new version. Test browser showed a phantom "Popped: 1"; code only pops on click, so likely the test harness.
   - Git: `explorations/` (prototype + photos) is still untracked on `docs/phase1-task2-prompts` (wrong branch). Needs a `feature/` branch + Jahnavi's commit. `.playwright-mcp/` deleted with her OK (2026-11-15).
+
+### 2026-11-18 · Web demo task 9 (Builder): accessibility pass
+- Manual audit (no axe/Lighthouse available without installing). Fixed in `web/index.html`: focus moves to Pause after Start and to Start after Reset; canvas is `aria-hidden`; reduced motion turns the cursor push fully off. Contrast, 400px reflow, tab order, hidden screens and leave under reduced motion all pass. Not committed.
