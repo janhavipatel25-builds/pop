@@ -50,8 +50,6 @@
   @media (hover: none), (pointer: coarse) { #btn-close .keycap { display: none; } }   /* touch users have no space bar */
   #btn-close:active { transform: translateX(-50%) scale(0.97); }
   @media (prefers-reduced-motion: reduce) { #btn-close:active { transform: translateX(-50%); } }
-  /* TEMPORARY test bar (only shown with ?debug) */
-  #test-bar { position: fixed; left: 12px; top: 12px; z-index: 10; display: flex; gap: 8px; }
 </style>
 </head>
 <body>
@@ -84,11 +82,6 @@
   <div id="announce" class="sr-only" aria-live="polite"></div>
 </main>
 <button type="button" id="btn-close" aria-keyshortcuts="Space" hidden>Close for now<span class="keycap" aria-hidden="true">space</span></button>
-<!-- TEMPORARY: butterfly test buttons, only shown with ?debug -->
-<div id="test-bar" hidden>
-  <button onclick="pop.startButterfly()">Start butterfly</button>
-  <button onclick="pop.stopButterfly()">Stop butterfly</button>
-</div>
 <canvas id="c" aria-hidden="true"></canvas>   <!-- decorative: the break is announced by #announce -->
 <script>
 /* ---- Tweak these ------------------------------------------------------ */
@@ -246,15 +239,9 @@ function enter() {                                      // start just off-screen
   time = 0; stateT = 0; state = 'enter'; first = true;
   if (FREEZE || SIDE) { A.x = A.y = A.z = 0; theta = Math.PI / 2; state = 'fly'; }
 }
-// (enter() is no longer called here: the butterfly waits until startButterfly())
 
 addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; });
 document.addEventListener('pointerleave', () => { mx = my = -9999; });
-addEventListener('keydown', e => {
-  if (!running || leaving) return;
-  if (e.key === 'r' || e.key === 'R') enter();
-  if (e.key === 'l' || e.key === 'L') { if (state === 'fly') stateDur = 0; }      // L: land now (handy for testing)
-});
 
 function update(dt) {
   time += dt; stateT += dt;
@@ -455,7 +442,6 @@ window.pop = { startButterfly, stopButterfly, stopButterflyNow, leaveButterfly, 
 /* ======================================================================
    5. THE TIMER AND SCREENS. Uses only window.pop (the butterfly API above).
    ====================================================================== */
-if (new URLSearchParams(location.search).has('debug')) document.getElementById('test-bar').hidden = false;
 const FAST = new URLSearchParams(location.search).has('fast');   // ?fast=1: each "minute" lasts 1 second, for quick testing
 const MINUTE = FAST ? 1000 : 60000;
 const AUTO_LEAVE_MS = 10 * MINUTE;                       // ignored butterfly flies away by itself after this long (10 s with ?fast=1)
@@ -540,7 +526,8 @@ $('btn-pause').addEventListener('click', () => (paused ? resumeTimer() : pauseTi
 $('btn-reset').addEventListener('click', resetTimer);
 $('btn-close').addEventListener('click', closeButterfly);   // Enter/Space on the focused button already "click" it, so no extra handler for those
 document.addEventListener('keydown', e => {
-  if (!butterflyOut) return;
+  if (e.repeat && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); return; }   // a held-down Enter/Space must not press the next button too (preventDefault stops the native click)
+  if (!butterflyOut || e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.key === 'Escape') closeButterfly();
   else if ((e.key === 'Enter' || e.key === ' ') && document.activeElement === document.body) { e.preventDefault(); closeButterfly(); }
 });

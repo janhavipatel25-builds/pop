@@ -34,6 +34,7 @@ Open the page with a normal local server or the live Pages link. Add `?fast=1` f
 - [ ] Phone width (resize the window narrow, or open on your phone): nothing runs off the screen; Close for now is easy to tap.
 - [ ] Reduced motion on (Mac: System Settings > Accessibility > Display > Reduce motion): butterfly is slower and gentler, the cursor does not push it, and it still arrives and leaves.
 - [ ] Background tab: use the real timer (no `?fast`), pick 20 min, start, switch to another tab for a few minutes; on return the time shown matches the real clock (not behind).
+- [ ] Background tab: if the 10-min auto-leave fires while the tab is hidden, the start screen appears when you return to the tab (fly-away finishes on the next animation frame).
 - [ ] Leave the butterfly alone for 10 real minutes: it flies away on its own.
 - [ ] Screen reader (VoiceOver, Cmd+F5) hears "Time for a break." when the butterfly arrives.
 
